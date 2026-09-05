@@ -29,6 +29,7 @@ module ALU_decoder(
     
     always@*
         begin
-            if (funct7[4] == 0 && {funct3[1], funct3[0]} == 3'b0 && (ALU_op == 2'b00 || ALU_op == 2'b10)) 
+            //if (funct7[4] == 0 && {funct3[1], funct3[0]} == 3'b0 && (ALU_op == 2'b00 || ALU_op == 2'b10))
+        end 
     
 endmodule

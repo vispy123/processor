@@ -39,6 +39,7 @@ module main_decoder(
     
     always@*
         begin
+        end
             
     
 endmodule
