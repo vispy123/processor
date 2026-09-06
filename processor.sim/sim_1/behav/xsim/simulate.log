@@ -1,3 +1,0 @@
-Time resolution is 1 ps
-Block Memory Generator module tb_bram.dut.bram.inst.native_mem_module.blk_mem_gen_v8_4_10_inst is using a behavioral model for simulation which will not precisely model memory collision behavior.
-$finish called at time : 65 ns : File "/home/vishnu/processor/processor.srcs/sim_1/new/tb_bram.v" Line 70
