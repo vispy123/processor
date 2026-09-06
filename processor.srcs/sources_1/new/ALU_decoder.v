@@ -24,6 +24,7 @@ module ALU_decoder(
     input [6:0] funct7,
     input [2:0] funct3,
     input [1:0] ALU_op,
+    
     output [1:0] control
     );
     

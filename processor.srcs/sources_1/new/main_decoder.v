@@ -22,6 +22,7 @@
 
 module main_decoder(
     input [6:0] opcode,
+    
     output ALU_src,
     output [1:0] mem_to_reg,
     output reg_write,

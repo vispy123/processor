@@ -41,9 +41,7 @@ module ID_EX_buffer(
     input [31:0] PC_plus1_in,
     input uses_rs1_in,
     input uses_rs2_in,
-    input clk,
-    input en,
-    input clear,
+
     output [4:0] rs1_out,
     output [4:0] rs2_out,
     output [31:0] imm_out,
@@ -64,5 +62,10 @@ module ID_EX_buffer(
     output [31:0] PC_plus1_out,
     output uses_rs1_out,
     output uses_rs2_out
+
+    input clk,
+    input en,
+    input clear,
     );
+    
 endmodule

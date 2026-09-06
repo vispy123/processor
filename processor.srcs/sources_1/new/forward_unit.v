@@ -30,4 +30,5 @@ module forward_unit(
     output [1:0] forward_A,
     output [1:0] forward_B
     );
+    
 endmodule

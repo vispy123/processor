@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 08/06/2026 05:18:07 PM
+// Create Date: 09/06/2026 12:12:27 PM
 // Design Name: 
-// Module Name: MEM1_MEM2_buffer
+// Module Name: IF1_IF2_buffer
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,22 +20,17 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module MEM1_MEM2_buffer(
-    input [31:0] ALU_out_in,
-    input [4:0] rd_in,
-    input [1:0] mem_to_reg_in,
-    input reg_write_in,
-    input mem_read_in,
+module IF1_IF2_buffer(
+    input [31:0] instr_in,
+    input [31:0] PC_in,
     input [31:0] PC_plus1_in,
 
-    output [31:0] ALU_out_out,
-    output [4:0] rd_out,
-    output [1:0] mem_to_reg_out,
-    output reg_write_out,
-    output mem_read_out,
+    output [31:0] instr_out,
+    output [31:0] PC_out,
     output [31:0] PC_plus1_out
 
     input clk,
+    input en,
     input clear,
     );
     

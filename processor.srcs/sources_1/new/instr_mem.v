@@ -22,8 +22,11 @@
 
 module instr_mem(
     input [9:0] addr, 
-    input clk, en, we,
+    input clk, 
+    input en, 
+    input we,
     input [31:0] din, 
+    
     output [31:0] dout
     );
     

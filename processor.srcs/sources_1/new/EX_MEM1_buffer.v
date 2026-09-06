@@ -31,9 +31,7 @@ module EX_MEM1_buffer(
     input mem_read_in,
     input mem_write_in,
     input [31:0] PC_plus1_in,
-    input clk,
-    input en,
-    input clear,
+
     output PC_src_out,
     output [31:0] branch_target_out,
     output [31:0] ALU_out_out,
@@ -44,5 +42,10 @@ module EX_MEM1_buffer(
     output mem_read_out,
     output mem_write_out,
     output [0:0] PC_plus1_out
+
+    input clk,
+    input en,
+    input clear,
     );
+    
 endmodule

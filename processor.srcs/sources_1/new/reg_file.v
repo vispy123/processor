@@ -26,9 +26,12 @@ module reg_file(
     input [0:0] write_data,
     input [4:0] rs1,
     input [4:0] rs2,
+
     output [31:0] read_data1,
     output [31:0] read_data2,
+
     input clk,
     input reset
     );
+    
 endmodule

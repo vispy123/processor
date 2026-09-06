@@ -30,6 +30,8 @@ module imm_gen(
     input S,
     input B,
     input J,
+
     output [31:0] imm
     );
+    
 endmodule

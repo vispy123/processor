@@ -29,6 +29,8 @@ module hazard_unit(
     input uses_rs2,
     input MEM1_MEM2_mem_read,
     input [4:0] MEM1_MEM2_rd,
+
     output stall
     );
+    
 endmodule
