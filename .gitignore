@@ -1,9 +1,2 @@
-/processor.cache
-/processor.hw
-/processor.gen
-/processor.ip_user_files
-/processor.runs
-/processor.sim
-/processor.srcs
-/processor.xpr
+/processor_1
 /.DS_Store
