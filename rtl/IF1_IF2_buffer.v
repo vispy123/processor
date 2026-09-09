@@ -21,11 +21,9 @@
 
 
 module IF1_IF2_buffer(
-    input [31:0] instr_in,
     input [31:0] PC_in,
     input [31:0] PC_plus1_in,
 
-    output [31:0] instr_out,
     output [31:0] PC_out,
     output [31:0] PC_plus1_out,
 
@@ -35,7 +33,6 @@ module IF1_IF2_buffer(
     input reset
     );
 
-    reg [31:0] instr_reg;
     reg [31:0] PC_reg;
     reg [31:0] PC_plus1_reg;
 
@@ -43,19 +40,16 @@ module IF1_IF2_buffer(
         begin
             if (reset || flush)
                 begin
-                    instr_reg <= 32'b0;
                     PC_reg <= 32'b0;
                     PC_plus1_reg <= 32'b0;
                 end
             else if (en)
                 begin
-                    instr_reg <= instr_in;
                     PC_reg <= PC_in;
                     PC_plus1_reg <= PC_plus1_in;
                 end
         end
 
-    assign instr_out = instr_reg;
     assign PC_out = PC_reg;
     assign PC_plus1_out = PC_plus1_reg;
     
