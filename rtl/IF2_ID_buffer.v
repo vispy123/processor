@@ -23,11 +23,11 @@
 module IF2_ID_buffer(
     input [31:0] instr_in,
     input [31:0] PC_in,
-    input [31:0] PC_plus1_in,
+    input [31:0] PC_plus4_in,
 
     output [31:0] instr_out,
     output [31:0] PC_out,
-    output [31:0] PC_plus1_out,
+    output [31:0] PC_plus4_out,
 
     input clk,
     input en,
@@ -37,7 +37,7 @@ module IF2_ID_buffer(
 
     reg [31:0] instr_reg;
     reg [31:0] PC_reg;
-    reg [31:0] PC_plus1_reg;
+    reg [31:0] PC_plus4_reg;
 
     always@(posedge clk)
         begin
@@ -45,18 +45,18 @@ module IF2_ID_buffer(
                 begin
                     instr_reg <= 32'b0;
                     PC_reg <= 32'b0;
-                    PC_plus1_reg <= 32'b0;
+                    PC_plus4_reg <= 32'b0;
                 end
             else if (en)
                 begin
                     instr_reg <= instr_in;
                     PC_reg <= PC_in;
-                    PC_plus1_reg <= PC_plus1_in;
+                    PC_plus4_reg <= PC_plus4_in;
                 end
         end
 
     assign instr_out = instr_reg;
     assign PC_out = PC_reg;
-    assign PC_plus1_out = PC_plus1_reg;
+    assign PC_plus4_out = PC_plus4_reg;
     
 endmodule

@@ -22,10 +22,10 @@
 
 module IF1_IF2_buffer(
     input [31:0] PC_in,
-    input [31:0] PC_plus1_in,
+    input [31:0] PC_plus4_in,
 
     output [31:0] PC_out,
-    output [31:0] PC_plus1_out,
+    output [31:0] PC_plus4_out,
 
     input clk,
     input en,
@@ -34,23 +34,23 @@ module IF1_IF2_buffer(
     );
 
     reg [31:0] PC_reg;
-    reg [31:0] PC_plus1_reg;
+    reg [31:0] PC_plus4_reg;
 
     always@(posedge clk)
         begin
             if (reset || flush)
                 begin
                     PC_reg <= 32'b0;
-                    PC_plus1_reg <= 32'b0;
+                    PC_plus4_reg <= 32'b0;
                 end
             else if (en)
                 begin
                     PC_reg <= PC_in;
-                    PC_plus1_reg <= PC_plus1_in;
+                    PC_plus4_reg <= PC_plus4_in;
                 end
         end
 
     assign PC_out = PC_reg;
-    assign PC_plus1_out = PC_plus1_reg;
+    assign PC_plus4_out = PC_plus4_reg;
     
 endmodule

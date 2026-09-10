@@ -30,7 +30,7 @@ module processor(
 
     reg [31:0] PC, PC_next;
     wire PC_en;
-    wire [31:0] PC_in, PC_plus1_in;
+    wire [31:0] PC_in, PC_plus4_in;
 
     assign PC_en=1'b1;
 
@@ -42,25 +42,25 @@ module processor(
     always@*
         begin
             PC_next = PC;
-            if (PC_en) PC_next = PC + 1;
+            if (PC_en) PC_next = PC + 4;
         end
     assign PC_in = PC;
-    assign PC_plus1_in = PC_in + 1;
+    assign PC_plus4_in = PC_in + 4;
 
 
     //IF_ID_buffer
 
     wire [31:0] PC_out_IF1;
-    wire [31:0] PC_plus1_out_IF1;
+    wire [31:0] PC_plus4_out_IF1;
     wire IF1_IF2_en;
     wire IF1_IF2_flush;
 
     IF1_IF2_buffer u_IF1_IF2_buffer(
         .PC_in(PC_in),
-        .PC_plus1_in(PC_plus1_in),
+        .PC_plus4_in(PC_plus4_in),
 
         .PC_out(PC_out_IF1),
-        .PC_plus1_out(PC_plus1_out_IF1),
+        .PC_plus4_out(PC_plus4_out_IF1),
 
         .clk(clk),
         .en(IF1_IF2_en),
@@ -93,18 +93,18 @@ module processor(
 
     wire [31:0] instr_out_ID;
     wire [31:0] PC_out_ID;
-    wire [31:0] PC_plus1_out_ID;
+    wire [31:0] PC_plus4_out_ID;
     wire IF2_ID_en;
     wire IF2_ID_flush;
 
     IF2_ID_buffer u_IF2_ID_buffer(
         .instr_in(dout),
         .PC_in(PC_out_IF1),
-        .PC_plus1_in(PC_plus1_out_IF1),
+        .PC_plus4_in(PC_plus4_out_IF1),
 
         .instr_out(instr_out_ID),
         .PC_out(PC_out_ID),
-        .PC_plus1_out(PC_plus1_out_ID),
+        .PC_plus4_out(PC_plus4_out_ID),
 
         .clk(clk),
         .en(IF2_ID_en),
