@@ -112,4 +112,15 @@ module processor(
         .reset(reset)
     );
 
+
+    //main_decoder
+
+    main_decoder u_main_decoder(
+        .opcode(instr_out_ID[6:0]),
+    );
+
+
+    //reg_file
+
+
 endmodule
