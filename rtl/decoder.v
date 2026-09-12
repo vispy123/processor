@@ -203,7 +203,7 @@ module decoder(
                             3'b001: alu_op = alu_op_sll; //slli
                             3'b101:
                                 begin
-                                    case (instr[31:25])
+                                    case (funct7)
                                         7'b0000000: alu_op = alu_op_srl; //srli
                                         7'b0100000: alu_op = alu_op_sra; //srai
                                         default: alu_op = 5'b00000;
