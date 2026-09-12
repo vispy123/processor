@@ -44,7 +44,8 @@ module reg_file(
         else if (write_enable && rd != 0)
             rf[rd] <= write_data;
 
-    assign read_data1 = (rs1 == 0) ? 32'b0 : rf[rs1];
-    assign read_data2 = (rs2 == 0) ? 32'b0 : rf[rs2];
+    assign read_data1 = (rs1 == 0) ? 32'b0 : (write_enable && (rd == rs1)) ? write_data : rf[rs1];
+    assign read_data2 = (rs2 == 0) ? 32'b0 : (write_enable && (rd == rs2)) ? write_data : rf[rs2];
+
 
 endmodule
