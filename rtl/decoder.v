@@ -5,7 +5,7 @@
 // 
 // Create Date: 08/06/2026 05:18:07 PM
 // Design Name: 
-// Module Name: main_decoder
+// Module Name: decoder
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -37,7 +37,8 @@ module decoder(
     output reg [4:0] alu_op, 
     output reg fence,
     output reg [1:0] sys_op, //ecall, ebreak
-    output reg [31:0] imm
+    output reg [31:0] imm,
+    output reg lui_check
     );
     
     wire [6:0] opcode;
@@ -59,10 +60,10 @@ module decoder(
 
     localparam branch_op_beq = 3'b000;
     localparam branch_op_bne = 3'b001;
-    localparam branch_op_blt = 3'b010;
-    localparam branch_op_bge = 3'b011;
-    localparam branch_op_bltu = 3'b100;
-    localparam branch_op_bgeu = 3'b101;
+    localparam branch_op_blt = 3'b100;
+    localparam branch_op_bge = 3'b101;
+    localparam branch_op_bltu = 3'b110;
+    localparam branch_op_bgeu = 3'b111;
 
     localparam load_op_lb = 3'b000;
     localparam load_op_lh = 3'b001;
@@ -114,12 +115,15 @@ module decoder(
             fence = 1'b0;
             sys_op = 2'b00;
             imm = 32'b0;
+            lui_check = 1'b0;
             case(opcode)
                 7'b0110111: //lui
                     begin
+                        alu_b_src = 1'b1;
                         reg_write = 1'b1;
-                        wb_sel = wb_sel_imm;
+                        wb_sel = wb_sel_alu;
                         imm = {instr[31:12], 12'b0};
+                        lui_check = 1'b1;
                     end
                 7'b0010111: //auipc
                     begin
@@ -149,13 +153,41 @@ module decoder(
                 7'b1100011: //branch
                     begin
                         case (funct3)
-                            3'b000: branch_op = branch_op_beq; 
-                            3'b001: branch_op = branch_op_bne;
-                            3'b100: branch_op = branch_op_blt;
-                            3'b101: branch_op = branch_op_bge;
-                            3'b110: branch_op = branch_op_bltu;
-                            3'b111: branch_op = branch_op_bgeu;
-                            default: branch_op = 3'b000;
+                            3'b000: //beq
+                                begin
+                                    branch_op = branch_op_beq;  
+                                    alu_op = alu_op_sub;
+                                end
+                            3'b001: //bne
+                                begin
+                                    branch_op = branch_op_bne;  
+                                    alu_op = alu_op_sub;
+                                end
+                            3'b100: //blt
+                                begin
+                                    branch_op = branch_op_blt;  
+                                    alu_op = alu_op_slt;
+                                end
+                            3'b101: //bge
+                                begin
+                                    branch_op = branch_op_bge; 
+                                    alu_op = alu_op_slt;
+                                end
+                            3'b110: //bltu
+                                begin
+                                    branch_op = branch_op_bltu; 
+                                    alu_op = alu_op_sltu;
+                                end
+                            3'b111: //bgeu
+                                begin
+                                    branch_op = branch_op_bgeu; 
+                                    alu_op = alu_op_sltu;
+                                end
+                            default: 
+                                begin
+                                    branch_op = 3'b000;
+                                    alu_op = 5'b00000;
+                                end
                         endcase
                         alu_b_src = 1'b0;
                         branch = 1'b1;
@@ -194,13 +226,13 @@ module decoder(
                 7'b0010011: //alu imm
                     begin
                         case (funct3)
-                            3'b000: alu_op = alu_op_add; //addi
-                            3'b010: alu_op = alu_op_slt; //slti
+                            3'b000: alu_op = alu_op_add;  //addi
+                            3'b010: alu_op = alu_op_slt;  //slti
                             3'b011: alu_op = alu_op_sltu; //sltiu
-                            3'b100: alu_op = alu_op_xor; //xori
-                            3'b110: alu_op = alu_op_or; //ori
-                            3'b111: alu_op = alu_op_and; //andi
-                            3'b001: alu_op = alu_op_sll; //slli
+                            3'b100: alu_op = alu_op_xor;  //xori
+                            3'b110: alu_op = alu_op_or;   //ori
+                            3'b111: alu_op = alu_op_and;  //andi
+                            3'b001: alu_op = alu_op_sll;  //slli
                             3'b101:
                                 begin
                                     case (funct7)
@@ -323,6 +355,7 @@ module decoder(
                         fence = 1'b0;
                         sys_op = 2'b00;
                         imm = 32'b0;
+                        lui_check = 1'b0;
                     end
             endcase
         end

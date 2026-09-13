@@ -43,6 +43,7 @@ module ID_EX1_buffer(
     input [31:0] imm_in,
     input [31:0] pc_in,
     input [31:0] pc_plus4_in,
+    input lui_check_in,
 
     output [4:0] rs1_out,
     output [4:0] rs2_out,
@@ -66,6 +67,7 @@ module ID_EX1_buffer(
     output [31:0] imm_out,
     output [31:0] pc_out,
     output [31:0] pc_plus4_out,
+    output lui_check_out,
 
     input clk,
     input en,
@@ -95,6 +97,7 @@ module ID_EX1_buffer(
     reg [31:0] imm_reg;
     reg [31:0] pc_reg;
     reg [31:0] pc_plus4_reg;
+    reg lui_check_reg;
 
     always@(posedge clk)
         begin
@@ -122,6 +125,7 @@ module ID_EX1_buffer(
                     imm_reg <= 32'b0;
                     pc_reg <= 32'b0;
                     pc_plus4_reg <= 32'b0;
+                    lui_check_reg <= 1'b0;
                 end
             else if (en)
                 begin
@@ -147,6 +151,7 @@ module ID_EX1_buffer(
                     imm_reg <= imm_in;
                     pc_reg <= pc_in;
                     pc_plus4_reg <= pc_plus4_in;
+                    lui_check_reg <= lui_check_in;
                 end
         end
 
@@ -172,5 +177,6 @@ module ID_EX1_buffer(
     assign imm_out = imm_reg;
     assign pc_out = pc_reg;
     assign pc_plus4_out = pc_plus4_reg;
+    assign lui_check_out = lui_check_reg;
 
 endmodule

@@ -19,6 +19,9 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
+//`define FPGA
+
+`ifdef FPGA
 
 module instr_mem(
     input [9:0] addr, 
@@ -40,3 +43,31 @@ module instr_mem(
     );
 
 endmodule
+
+`else 
+
+module instr_mem(
+    input [9:0] addr, 
+    input clk, 
+    input en, 
+    input we,
+    input [31:0] din, 
+    
+    output reg [31:0] dout
+    );
+    
+    reg [31:0] mem [0:1023];
+
+    always @(posedge clk)
+        begin
+            if (en) 
+                begin
+                    if (we) mem[addr[9:0]] <= din;
+                    dout <= mem[addr[9:0]];
+                end
+        end
+
+endmodule
+
+
+`endif

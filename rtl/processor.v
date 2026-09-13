@@ -32,19 +32,22 @@ module processor(
     reg [31:0] pc_next;
     wire [31:0] pc_IF1;
     wire [31:0] pc_plus4_IF1;
-    wire pc_en;
 
+    wire branch_taken_MEM1;
+    wire [31:0] branch_target_MEM1;
+
+    wire pc_en;
     assign pc_en = 1'b1;
 
     always@(posedge clk)
         begin
             if (reset) pc <= 32'b0;
-            else pc <= pc_next;
+            else if (pc_en) pc <= pc_next;
         end
     always@*
         begin
-            pc_next = pc;
-            if (pc_en) pc_next = pc + 4;
+            if (branch_taken_MEM1 == 1'b0) pc_next = pc + 4;
+            else pc_next = branch_target_MEM1;
         end
     assign pc_IF1 = pc;
     assign pc_plus4_IF1 = pc + 4;
@@ -81,7 +84,7 @@ module processor(
     assign en=1'b1;
 
     instr_mem u_instr_mem(
-        .addr(pc_IF1[9:0]),
+        .addr(pc_IF1[11:2]),
         .clk(clk),
         .we(we),
         .en(en),
@@ -132,6 +135,7 @@ module processor(
     wire fence_ID;
     wire [1:0] sys_op_ID;
     wire [31:0] imm_ID;
+    wire lui_check_ID;
 
     decoder u_decoder(
         .instr(instr_ID),
@@ -150,7 +154,8 @@ module processor(
         .alu_op(alu_op_ID),
         .fence(fence_ID),
         .sys_op(sys_op_ID),
-        .imm(imm_ID)
+        .imm(imm_ID),
+        .lui_check(lui_check_ID)
     );
 
 
@@ -187,6 +192,7 @@ module processor(
 
     //ID_EX1_buffer
     wire [4:0] rs1_EX1;
+    wire [4:0] rs1_intermediate_EX1;
     wire [4:0] rs2_EX1;
     wire [4:0] rd_EX1;
     wire [31:0] rs1_data_EX1;
@@ -208,6 +214,7 @@ module processor(
     wire [31:0] imm_EX1;
     wire [31:0] pc_EX1;
     wire [31:0] pc_plus4_EX1;
+    wire lui_check_EX1;
     wire ID_EX1_en;
     wire ID_EX1_flush;
 
@@ -234,8 +241,9 @@ module processor(
         .imm_in(imm_ID),
         .pc_in(pc_ID),
         .pc_plus4_in(pc_plus4_ID),
+        .lui_check_in(lui_check_ID),
 
-        .rs1_out(rs1_EX1),
+        .rs1_out(rs1_intermediate_EX1),
         .rs2_out(rs2_EX1),
         .rd_out(rd_EX1),
         .rs1_data_out(rs1_data_EX1),
@@ -257,10 +265,174 @@ module processor(
         .imm_out(imm_EX1),
         .pc_out(pc_EX1),
         .pc_plus4_out(pc_plus4_EX1),
+        .lui_check_out(lui_check_EX1),
 
         .clk(clk),
         .en(ID_EX1_en),
         .flush(ID_EX1_flush),
+        .reset(reset)
+    );
+
+
+    //EX1
+
+    wire [31:0] alu_a_intermediate_EX1;
+    wire [31:0] alu_a_EX1;
+    wire [31:0] alu_b_EX1;
+
+    assign alu_a_intermediate_EX1 = (alu_a_src_EX1 == 1'b1)? pc_EX1 : rs1_data_EX1;
+    assign alu_b_EX1 = (alu_b_src_EX1 == 1'b1)? imm_EX1 : rs2_data_EX1;
+    assign alu_a_EX1 = (lui_check_EX1 == 1'b1)? 32'b0 : alu_a_intermediate_EX1;
+    assign rs1_EX1 = (lui_check_EX1 == 1'b1)? 5'b0 : rs1_intermediate_EX1;
+
+
+    //EX1_EX2_buffer
+
+    wire [4:0] rs1_EX2;
+    wire [4:0] rs2_EX2;
+    wire [4:0] rd_EX2;
+    wire [31:0] rs2_data_EX2; //for stores
+    wire [31:0] alu_a_EX2;
+    wire [31:0] alu_b_EX2;
+    wire [1:0] wb_sel_EX2;
+    wire [1:0] pc_sel_EX2; 
+    wire reg_write_EX2; 
+    wire mem_read_EX2;
+    wire mem_write_EX2;
+    wire branch_EX2;
+    wire [2:0] branch_op_EX2; 
+    wire [2:0] load_op_EX2;
+    wire [1:0] store_op_EX2; 
+    wire [4:0] alu_op_EX2; 
+    wire fence_EX2;
+    wire [1:0] sys_op_EX2;
+    wire [31:0] pc_EX2;
+    wire [31:0] pc_plus4_EX2;
+    wire EX1_EX2_en;
+    wire EX1_EX2_flush;
+
+    EX1_EX2_buffer u_EX1_EX2_buffer(
+        .rs1_in(rs1_EX1),
+        .rs2_in(rs2_EX1),
+        .rd_in(rd_EX1),
+        .rs2_data_in(rs2_data_EX1),
+        .alu_a_in(alu_a_EX1),
+        .alu_b_in(alu_b_EX1),
+        .wb_sel_in(wb_sel_EX1),
+        .pc_sel_in(pc_sel_EX1),
+        .reg_write_in(reg_write_EX1),
+        .mem_read_in(mem_read_EX1),
+        .mem_write_in(mem_write_EX1),
+        .branch_in(branch_EX1),
+        .branch_op_in(branch_op_EX1),
+        .load_op_in(load_op_EX1),
+        .store_op_in(store_op_EX1),
+        .alu_op_in(alu_op_EX1),
+        .fence_in(fence_EX1),
+        .sys_op_in(sys_op_EX1),
+        .pc_in(pc_EX1),
+        .pc_plus4_in(pc_plus4_EX1),
+
+        .rs1_out(rs1_EX2),
+        .rs2_out(rs2_EX2),
+        .rd_out(rd_EX2),
+        .rs2_data_out(rs2_data_EX2),
+        .alu_a_out(alu_a_EX2),
+        .alu_b_out(alu_b_EX2),
+        .wb_sel_out(wb_sel_EX2),
+        .pc_sel_out(pc_sel_EX2),
+        .reg_write_out(reg_write_EX2),
+        .mem_read_out(mem_read_EX2),
+        .mem_write_out(mem_write_EX2),
+        .branch_out(branch_EX2),
+        .branch_op_out(branch_op_EX2),
+        .load_op_out(load_op_EX2),
+        .store_op_out(store_op_EX2),
+        .alu_op_out(alu_op_EX2),
+        .fence_out(fence_EX2),
+        .sys_op_out(sys_op_EX2),
+        .pc_out(pc_EX2),
+        .pc_plus4_out(pc_plus4_EX2),
+
+        .clk(clk),
+        .en(EX1_EX2_en),
+        .flush(EX1_EX2_flush),
+        .reset(reset)
+    );
+
+
+    //alu
+
+    wire [31:0] alu_out_EX2;
+
+    alu u_alu(
+        .alu_a(alu_a_EX2),
+        .alu_b(alu_b_EX2),
+        .control(alu_op_EX2),
+        
+        .alu_out(alu_out_EX2)
+    );
+
+
+    //EX2_MEM1_buffer
+
+    wire [4:0] rd_MEM1;
+    wire [31:0] rs2_data_MEM1;
+    wire [31:0] alu_out_MEM1;
+    wire [1:0] wb_sel_MEM1;
+    wire [1:0] pc_sel_MEM1; 
+    wire reg_write_MEM1; 
+    wire mem_read_MEM1;
+    wire mem_write_MEM1;
+    wire branch_MEM1;
+    wire [2:0] branch_op_MEM1; 
+    wire [2:0] load_op_MEM1;
+    wire [1:0] store_op_MEM1; 
+    wire fence_MEM1;
+    wire [1:0] sys_op_MEM1;
+    wire [31:0] pc_MEM1;
+    wire [31:0] pc_plus4_MEM1;
+    wire EX2_MEM1_en;
+    wire EX2_MEM1_flush;
+
+    EX2_MEM1_buffer u_EX2_MEM1_buffer(
+        .rd_in(rd_EX2),
+        .rs2_data_in(rs2_data_EX2),
+        .alu_out_in(alu_out_EX2),
+        .wb_sel_in(wb_sel_EX2),
+        .pc_sel_in(pc_sel_EX2),
+        .reg_write_in(reg_write_EX2),
+        .mem_read_in(mem_read_EX2),
+        .mem_write_in(mem_write_EX2),
+        .branch_in(branch_EX2),
+        .branch_op_in(branch_op_EX2),
+        .load_op_in(load_op_EX2),
+        .store_op_in(store_op_EX2),
+        .fence_in(fence_EX2),
+        .sys_op_in(sys_op_EX2),
+        .pc_in(pc_EX2),
+        .pc_plus4_in(pc_plus4_EX2),
+
+        .rd_out(rd_MEM1),
+        .rs2_data_out(rs2_data_MEM1),
+        .alu_out_out(alu_out_MEM1),
+        .wb_sel_out(wb_sel_MEM1),
+        .pc_sel_out(pc_sel_MEM1),
+        .reg_write_out(reg_write_MEM1),
+        .mem_read_out(mem_read_MEM1),
+        .mem_write_out(mem_write_MEM1),
+        .branch_out(branch_MEM1),
+        .branch_op_out(branch_op_MEM1),
+        .load_op_out(load_op_MEM1),
+        .store_op_out(store_op_MEM1),
+        .fence_out(fence_MEM1),
+        .sys_op_out(sys_op_MEM1),
+        .pc_out(pc_MEM1),
+        .pc_plus4_out(pc_plus4_MEM1),
+
+        .clk(clk),
+        .en(EX2_MEM1_en),
+        .flush(EX2_MEM1_flush),
         .reset(reset)
     );
 
