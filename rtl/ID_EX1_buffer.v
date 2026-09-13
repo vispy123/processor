@@ -5,7 +5,7 @@
 // 
 // Create Date: 08/06/2026 05:18:07 PM
 // Design Name: 
-// Module Name: ID_EX_buffer
+// Module Name: ID_EX1_buffer
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
