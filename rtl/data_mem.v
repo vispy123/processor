@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 09/06/2026 12:26:17 AM
+// Create Date: 09/16/2026 09:36:17 PM
 // Design Name: 
-// Module Name: instr_mem
+// Module Name: data_mem
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -21,11 +21,11 @@
 
 //`define FPGA
 
-module instr_mem(
+module data_mem(
     input [9:0] addr, 
     input clk, 
     input en, 
-    input we,
+    input [3:0] we,
     input [31:0] din, 
     
     output reg [31:0] dout
@@ -33,10 +33,10 @@ module instr_mem(
     
     `ifdef FPGA
 
-    blk_mem_gen_0 bram (
+    blk_mem_gen_1 bram (
         .clka(clk),    // input wire clka
         .ena(en),      // input wire ena
-        .wea(we),      // input wire [0 : 0] wea
+        .wea(we),      // input wire [3 : 0] wea
         .addra(addr),  // input wire [9 : 0] addra
         .dina(din),    // input wire [31 : 0] dina
         .douta(dout)   // output wire [31 : 0] douta
@@ -50,11 +50,17 @@ module instr_mem(
         begin
             if (en) 
                 begin
-                    if (we) mem[addr[9:0]] <= din;
-                    else dout <= mem[addr[9:0]];
+                    if (we == 4'b0000) dout <= mem[addr];
+                    else
+                        begin
+                            if (we[0]) mem[addr][7:0]   <= din[7:0];
+                            if (we[1]) mem[addr][15:8]  <= din[15:8];
+                            if (we[2]) mem[addr][23:16] <= din[23:16];
+                            if (we[3]) mem[addr][31:24] <= din[31:24];
+                        end
                 end
         end
-
+    
     `endif
 
 endmodule

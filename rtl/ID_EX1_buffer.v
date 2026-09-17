@@ -29,7 +29,7 @@ module ID_EX1_buffer(
     input alu_a_src_in,
     input alu_b_src_in,
     input [1:0] wb_sel_in,
-    input [1:0] pc_sel_in,
+    input pc_sel_in,
     input reg_write_in,
     input mem_read_in,
     input mem_write_in,
@@ -53,7 +53,7 @@ module ID_EX1_buffer(
     output alu_a_src_out,
     output alu_b_src_out,
     output [1:0] wb_sel_out,
-    output [1:0] pc_sel_out,
+    output pc_sel_out,
     output reg_write_out,
     output mem_read_out,
     output mem_write_out,
@@ -83,7 +83,7 @@ module ID_EX1_buffer(
     reg alu_a_src_reg;
     reg alu_b_src_reg;
     reg [1:0] wb_sel_reg;
-    reg [1:0] pc_sel_reg;
+    reg pc_sel_reg;
     reg reg_write_reg;
     reg mem_read_reg;
     reg mem_write_reg;
@@ -111,7 +111,7 @@ module ID_EX1_buffer(
                     alu_a_src_reg <= 1'b0;
                     alu_b_src_reg <= 1'b0;
                     wb_sel_reg <= 2'b0;
-                    pc_sel_reg <= 2'b0;
+                    pc_sel_reg <= 1'b0;
                     reg_write_reg <= 1'b0;
                     mem_read_reg <= 1'b0;
                     mem_write_reg <= 1'b0;

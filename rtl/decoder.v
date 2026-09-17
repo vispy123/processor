@@ -26,11 +26,11 @@ module decoder(
     output reg alu_a_src, //rs1 or pc(auipc)
     output reg alu_b_src, //rs2 or imm
     output reg [1:0] wb_sel,
-    output reg [1:0] pc_sel, 
+    output reg pc_sel, //imm or reg
     output reg reg_write, 
     output reg mem_read,
     output reg mem_write,
-    output reg branch,
+    output reg branch, //or jump
     output reg [2:0] branch_op, 
     output reg [2:0] load_op, 
     output reg [1:0] store_op, 
@@ -52,11 +52,6 @@ module decoder(
     localparam wb_sel_alu = 2'b00;
     localparam wb_sel_mem = 2'b01;
     localparam wb_sel_pc_plus4 = 2'b10;
-    localparam wb_sel_imm = 2'b11;
-
-    localparam pc_sel_pc_plus4 = 2'b00;
-    localparam pc_sel_imm = 2'b01;
-    localparam pc_sel_reg = 2'b10;
 
     localparam branch_op_beq = 3'b000;
     localparam branch_op_bne = 3'b001;
@@ -103,7 +98,7 @@ module decoder(
             alu_a_src = 1'b0;
             alu_b_src = 1'b0;
             wb_sel = 2'b00;
-            pc_sel = 2'b00;
+            pc_sel = 1'b0;
             reg_write = 1'b0;
             mem_read = 1'b0;
             mem_write = 1'b0;
@@ -136,16 +131,21 @@ module decoder(
                     end
                 7'b1101111: //jal
                     begin
-                        pc_sel = pc_sel_imm;
+                        alu_a_src = 1'b1; //pc
+                        alu_b_src = 1'b1; //imm
+                        pc_sel = 1'b0;
+                        branch = 1'b1;
                         reg_write = 1'b1;
                         wb_sel = wb_sel_pc_plus4;
                         imm = {{12{instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0};
                     end
                 7'b1100111: //jalr
                     begin
-                        alu_b_src = 1'b1;
+                        alu_a_src = 1'b0; //rs1
+                        alu_b_src = 1'b1; //imm
                         wb_sel = wb_sel_pc_plus4;
-                        pc_sel = pc_sel_reg;
+                        pc_sel = 1'b1;
+                        branch = 1'b1;
                         reg_write = 1'b1;
                         alu_op = alu_op_add;
                         imm = {{20{instr[31]}}, instr[31:20]};
@@ -153,43 +153,16 @@ module decoder(
                 7'b1100011: //branch
                     begin
                         case (funct3)
-                            3'b000: //beq
-                                begin
-                                    branch_op = branch_op_beq;  
-                                    alu_op = alu_op_sub;
-                                end
-                            3'b001: //bne
-                                begin
-                                    branch_op = branch_op_bne;  
-                                    alu_op = alu_op_sub;
-                                end
-                            3'b100: //blt
-                                begin
-                                    branch_op = branch_op_blt;  
-                                    alu_op = alu_op_slt;
-                                end
-                            3'b101: //bge
-                                begin
-                                    branch_op = branch_op_bge; 
-                                    alu_op = alu_op_slt;
-                                end
-                            3'b110: //bltu
-                                begin
-                                    branch_op = branch_op_bltu; 
-                                    alu_op = alu_op_sltu;
-                                end
-                            3'b111: //bgeu
-                                begin
-                                    branch_op = branch_op_bgeu; 
-                                    alu_op = alu_op_sltu;
-                                end
-                            default: 
-                                begin
-                                    branch_op = 3'b000;
-                                    alu_op = 5'b00000;
-                                end
+                            3'b000: branch_op = branch_op_beq;  
+                            3'b001: branch_op = branch_op_bne;  
+                            3'b100: branch_op = branch_op_blt;  
+                            3'b101: branch_op = branch_op_bge; 
+                            3'b110: branch_op = branch_op_bltu; 
+                            3'b111: branch_op = branch_op_bgeu; 
+                            default: branch_op = 3'b000; 
                         endcase
-                        alu_b_src = 1'b0;
+                        alu_a_src = 1'b1;
+                        alu_b_src = 1'b1;
                         branch = 1'b1;
                         imm = {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
                     end
@@ -343,7 +316,7 @@ module decoder(
                         alu_a_src = 1'b0;
                         alu_b_src = 1'b0;
                         wb_sel = 2'b00;
-                        pc_sel = 2'b00;
+                        pc_sel = 1'b0;
                         reg_write = 1'b0;
                         mem_read = 1'b0;
                         mem_write = 1'b0;
