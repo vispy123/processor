@@ -39,6 +39,8 @@ module decoder(
     output reg [1:0] sys_op, //ecall, ebreak
     output reg [31:0] imm,
     output reg lui_check
+    output reg uses_rs1,
+    output reg uses_rs2
     );
     
     wire [6:0] opcode;
@@ -148,6 +150,7 @@ module decoder(
                         branch = 1'b1;
                         reg_write = 1'b1;
                         alu_op = alu_op_add;
+                        uses_rs1 = 1'b1;
                         imm = {{20{instr[31]}}, instr[31:20]};
                     end
                 7'b1100011: //branch
@@ -164,6 +167,8 @@ module decoder(
                         alu_a_src = 1'b1;
                         alu_b_src = 1'b1;
                         branch = 1'b1;
+                        uses_rs1 = 1'b1;
+                        uses_rs2 = 1'b1;
                         imm = {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
                     end
                 7'b0000011: //load
@@ -181,6 +186,7 @@ module decoder(
                         reg_write = 1'b1;
                         alu_op = alu_op_add;
                         wb_sel = wb_sel_mem;
+                        uses_rs1 = 1'b1;
                         imm = {{20{instr[31]}}, instr[31:20]};
                     end
                 7'b0100011: //store
@@ -194,6 +200,8 @@ module decoder(
                         alu_b_src = 1'b1;
                         mem_write = 1'b1;
                         alu_op = alu_op_add;
+                        uses_rs1 = 1'b1;
+                        uses_rs2 = 1'b1;
                         imm = {{20{instr[31]}}, instr[31:25], instr[11:7]};
                     end
                 7'b0010011: //alu imm
@@ -219,6 +227,7 @@ module decoder(
                         alu_b_src = 1'b1;
                         reg_write = 1'b1;
                         wb_sel = wb_sel_alu;
+                        uses_rs1 = 1'b1;
                         if (funct3 == 3'b001 || funct3 == 3'b101)
                             imm = {{27{1'b0}}, instr[24:20]};
                         else
@@ -299,6 +308,8 @@ module decoder(
                         alu_b_src = 1'b0;
                         reg_write = 1'b1;
                         wb_sel = wb_sel_alu;
+                        uses_rs1 = 1'b1;
+                        uses_rs2 = 1'b1;
                     end
                 7'b0001111: //fence
                     begin
@@ -329,6 +340,8 @@ module decoder(
                         sys_op = 2'b00;
                         imm = 32'b0;
                         lui_check = 1'b0;
+                        uses_rs1 = 1'b0;
+                        uses_rs2 = 1'b0;
                     end
             endcase
         end

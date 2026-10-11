@@ -150,6 +150,8 @@ module processor(
     wire [1:0] sys_op_ID;
     wire [31:0] imm_ID;
     wire lui_check_ID;
+    wire uses_rs1_ID;
+    wire uses_rs2_ID;
 
     decoder u_decoder(
         .instr(instr_ID),
@@ -169,7 +171,9 @@ module processor(
         .fence(fence_ID),
         .sys_op(sys_op_ID),
         .imm(imm_ID),
-        .lui_check(lui_check_ID)
+        .lui_check(lui_check_ID),
+        .uses_rs1(uses_rs1_ID),
+        .uses_rs2(uses_rs2_ID)
     );
 
 
@@ -230,6 +234,8 @@ module processor(
     wire [31:0] pc_EX1;
     wire [31:0] pc_plus4_EX1;
     wire lui_check_EX1;
+    wire uses_rs1_EX1;
+    wire uses_rs2_EX1;
 
     ID_EX1_buffer u_ID_EX1_buffer(
         .rs1_in(rs1_ID),
@@ -255,6 +261,8 @@ module processor(
         .pc_in(pc_ID),
         .pc_plus4_in(pc_plus4_ID),
         .lui_check_in(lui_check_ID),
+        .uses_rs1_in(uses_rs1_ID),
+        .uses_rs2_in(uses_rs2_ID),
 
         .rs1_out(rs1_intermediate_EX1),
         .rs2_out(rs2_EX1),
@@ -279,6 +287,8 @@ module processor(
         .pc_out(pc_EX1),
         .pc_plus4_out(pc_plus4_EX1),
         .lui_check_out(lui_check_EX1),
+        .uses_rs1_out(uses_rs1_EX1),
+        .uses_rs2_out(uses_rs2_EX1),
 
         .clk(clk),
         .en(ID_EX1_en),
@@ -293,8 +303,8 @@ module processor(
         .branch(branch_EX1),
         .branch_op(branch_op_EX1),
         .wb_sel_pc_plus4(wb_sel_EX1[1]),
-        .alu_a(rs1_data_EX1),
-        .alu_b(rs2_data_EX1),
+        .rs1_data(rs1_data_EX1),
+        .rs2_data(rs2_data_EX1),
         
         .branch_taken(branch_taken_EX1)
     );
@@ -585,4 +595,12 @@ module processor(
             endcase
         end
     
+
+    //hazards
+
+    hazard u_hazard(
+        
+    );
+
+
 endmodule
