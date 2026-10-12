@@ -29,6 +29,7 @@ module MEM2_WB_buffer(
     input [1:0] sys_op_in,
     input [31:0] pc_plus4_in,
     input [31:0] data_in,
+    input [1:0] available_in,
 
     output [4:0] rd_out,
     output [31:0] alu_out_out,
@@ -38,6 +39,7 @@ module MEM2_WB_buffer(
     output [1:0] sys_op_out,
     output [31:0] pc_plus4_out,
     output [31:0] data_out,
+    output [1:0] available_out,
 
     input clk,
     input flush,
@@ -53,6 +55,7 @@ module MEM2_WB_buffer(
     reg [1:0] sys_op_reg;
     reg [31:0] pc_plus4_reg; 
     reg [31:0] data_reg;
+    reg [1:0] available_reg;
 
     always@(posedge clk)
         begin
@@ -66,6 +69,7 @@ module MEM2_WB_buffer(
                     sys_op_reg <= 2'b0;
                     pc_plus4_reg <= 32'b0;
                     data_reg <= 32'b0;
+                    available_reg <= 2'b0;
                 end
             else if (en)
                 begin
@@ -77,6 +81,7 @@ module MEM2_WB_buffer(
                     sys_op_reg <= sys_op_in;
                     pc_plus4_reg <= pc_plus4_in;
                     data_reg <= data_in;
+                    available_reg <= available_in;
                 end
         end
 
@@ -88,5 +93,6 @@ module MEM2_WB_buffer(
     assign sys_op_out = sys_op_reg;
     assign pc_plus4_out = pc_plus4_reg; 
     assign data_out = data_reg;
+    assign available_out = available_reg;
     
 endmodule

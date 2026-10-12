@@ -29,7 +29,7 @@ module processor(
     //pc
     
     reg [31:0] pc;
-    reg [31:0] pc_next;
+    wire [31:0] pc_next;
     wire [31:0] pc_IF1;
     wire [31:0] pc_plus4_IF1;
 
@@ -150,6 +150,7 @@ module processor(
     wire [1:0] sys_op_ID;
     wire [31:0] imm_ID;
     wire lui_check_ID;
+    wire [1:0] available_ID;
     wire uses_rs1_ID;
     wire uses_rs2_ID;
 
@@ -172,6 +173,7 @@ module processor(
         .sys_op(sys_op_ID),
         .imm(imm_ID),
         .lui_check(lui_check_ID),
+        .available(available_ID),
         .uses_rs1(uses_rs1_ID),
         .uses_rs2(uses_rs2_ID)
     );
@@ -189,8 +191,8 @@ module processor(
     wire [4:0] rd_WB;
     reg [31:0] write_data_WB;
 
-    assign rs1_ID = instr_ID[19:15];
-    assign rs2_ID = instr_ID[24:20];
+    assign rs1_ID = uses_rs1_ID ? instr_ID[19:15] : 5'b0;
+    assign rs2_ID = uses_rs2_ID ? instr_ID[24:20] : 5'b0;
     assign rd_ID = instr_ID[11:7];
 
     reg_file u_reg_file(
@@ -234,8 +236,7 @@ module processor(
     wire [31:0] pc_EX1;
     wire [31:0] pc_plus4_EX1;
     wire lui_check_EX1;
-    wire uses_rs1_EX1;
-    wire uses_rs2_EX1;
+    wire [1:0] available_EX1;
 
     ID_EX1_buffer u_ID_EX1_buffer(
         .rs1_in(rs1_ID),
@@ -261,8 +262,7 @@ module processor(
         .pc_in(pc_ID),
         .pc_plus4_in(pc_plus4_ID),
         .lui_check_in(lui_check_ID),
-        .uses_rs1_in(uses_rs1_ID),
-        .uses_rs2_in(uses_rs2_ID),
+        .available_in(available_ID),
 
         .rs1_out(rs1_intermediate_EX1),
         .rs2_out(rs2_EX1),
@@ -287,8 +287,7 @@ module processor(
         .pc_out(pc_EX1),
         .pc_plus4_out(pc_plus4_EX1),
         .lui_check_out(lui_check_EX1),
-        .uses_rs1_out(uses_rs1_EX1),
-        .uses_rs2_out(uses_rs2_EX1),
+        .available_out(available_EX1),
 
         .clk(clk),
         .en(ID_EX1_en),
@@ -349,6 +348,7 @@ module processor(
     wire fence_EX2;
     wire [1:0] sys_op_EX2;
     wire [31:0] pc_plus4_EX2;
+    wire [1:0] available_EX2;
 
     EX1_EX2_buffer u_EX1_EX2_buffer(
         .rs1_in(rs1_EX1),
@@ -367,6 +367,7 @@ module processor(
         .fence_in(fence_EX1),
         .sys_op_in(sys_op_EX1),
         .pc_plus4_in(pc_plus4_EX1),
+        .available_in(available_EX1),
 
         .rs1_out(rs1_EX2),
         .rs2_out(rs2_EX2),
@@ -384,6 +385,7 @@ module processor(
         .fence_out(fence_EX2),
         .sys_op_out(sys_op_EX2),
         .pc_plus4_out(pc_plus4_EX2),
+        .available_out(available_EX2),
 
         .clk(clk),
         .en(EX1_EX2_en),
@@ -407,6 +409,7 @@ module processor(
 
     //EX2_MEM1_buffer
 
+    wire [4:0] rs2_MEM1;
     wire [4:0] rd_MEM1;
     wire [31:0] rs2_data_MEM1;
     wire [31:0] alu_out_MEM1;
@@ -419,8 +422,10 @@ module processor(
     wire fence_MEM1;
     wire [1:0] sys_op_MEM1;
     wire [31:0] pc_plus4_MEM1;
+    wire [1:0] available_MEM1;
 
     EX2_MEM1_buffer u_EX2_MEM1_buffer(
+        .rs2_in(rs2_EX2),
         .rd_in(rd_EX2),
         .rs2_data_in(rs2_data_EX2),
         .alu_out_in(alu_out_EX2),
@@ -433,7 +438,9 @@ module processor(
         .fence_in(fence_EX2),
         .sys_op_in(sys_op_EX2),
         .pc_plus4_in(pc_plus4_EX2),
+        .available_in(available_EX2),
 
+        .rs2_out(rs2_MEM1),
         .rd_out(rd_MEM1),
         .rs2_data_out(rs2_data_MEM1),
         .alu_out_out(alu_out_MEM1),
@@ -446,6 +453,7 @@ module processor(
         .fence_out(fence_MEM1),
         .sys_op_out(sys_op_MEM1),
         .pc_plus4_out(pc_plus4_MEM1),
+        .available_out(available_MEM1),
 
         .clk(clk),
         .en(EX2_MEM1_en),
@@ -499,6 +507,7 @@ module processor(
     wire fence_MEM2;
     wire [1:0] sys_op_MEM2;
     wire [31:0] pc_plus4_MEM2;
+    wire [1:0] available_MEM2;
 
     MEM1_MEM2_buffer u_MEM1_MEM2_buffer(
         .rd_in(rd_MEM1),
@@ -511,6 +520,7 @@ module processor(
         .fence_in(fence_MEM1),
         .sys_op_in(sys_op_MEM1),
         .pc_plus4_in(pc_plus4_MEM1),
+        .available_in(available_MEM1),
 
         .rd_out(rd_MEM2),
         .alu_out_out(alu_out_MEM2),
@@ -522,6 +532,7 @@ module processor(
         .fence_out(fence_MEM2),
         .sys_op_out(sys_op_MEM2),
         .pc_plus4_out(pc_plus4_MEM2),
+        .available_out(available_MEM2),
 
         .clk(clk),
         .en(MEM1_MEM2_en),
@@ -552,6 +563,7 @@ module processor(
     wire [1:0] sys_op_WB;
     wire [31:0] pc_plus4_WB;
     wire [31:0] data_WB;
+    wire [1:0] available_WB;
 
     MEM2_WB_buffer u_MEM2_WB_buffer(
         .rd_in(rd_MEM2),
@@ -562,6 +574,7 @@ module processor(
         .sys_op_in(sys_op_MEM2),
         .pc_plus4_in(pc_plus4_MEM2),
         .data_in(data_MEM2),
+        .available_in(available_MEM2),
 
         .rd_out(rd_WB),
         .alu_out_out(alu_out_WB),
@@ -571,6 +584,7 @@ module processor(
         .sys_op_out(sys_op_WB),
         .pc_plus4_out(pc_plus4_WB),
         .data_out(data_WB),
+        .available_out(available_WB),
 
         .clk(clk),
         .en(MEM2_WB_en),
@@ -596,11 +610,47 @@ module processor(
         end
     
 
-    //hazards
+    //forwards
 
-    hazard u_hazard(
-        
+    localparam no_forward=3'b000;
+    localparam from_ex2=3'b001;
+    localparam from_mem1=3'b010;
+    localparam from_mem2=3'b011;
+    localparam from_wb=3'b100;
+
+    wire [2:0] forward_rs1_EX1;
+    wire [2:0] forward_rs2_EX1;
+    wire [2:0] forward_rs1_EX2;
+    wire [2:0] forward_rs2_EX2;
+    wire [2:0] forward_rs2_MEM1;
+
+    forward u_forward(
+        .rd_EX2(rd_EX2),
+        .rd_MEM1(rd_MEM1),
+        .rd_MEM2(rd_MEM2),
+        .rd_WB(rd_WB),
+
+        .rs1_EX1(rs1_EX1),
+        .rs2_EX1(rs2_EX1),
+        .rs1_EX2(rs1_EX2),
+        .rs2_EX2(rs2_EX2),
+        .rs2_MEM1(rs2_MEM1),
+
+        .reg_write_EX2(reg_write_EX2),
+        .reg_write_MEM1(reg_write_MEM1),
+        .reg_write_MEM2(reg_write_MEM2),
+        .reg_write_WB(reg_write_WB),
+
+        .available_EX2(available_EX2),
+        .available_MEM1(available_MEM1),
+        .available_MEM2(available_MEM2),
+        .available_WB(available_WB),
+
+        .forward_rs1_EX1(forward_rs1_EX1),
+        .forward_rs2_EX1(forward_rs2_EX1),
+        .forward_rs1_EX2(forward_rs1_EX2),
+        .forward_rs2_EX2(forward_rs2_EX2),
+        .forward_rs2_MEM1(forward_rs2_MEM1)
     );
-
 
 endmodule

@@ -21,6 +21,7 @@
 
 
 module EX2_MEM1_buffer(
+    input [4:0] rs2_in,
     input [4:0] rd_in,
     input [31:0] rs2_data_in,
     input [31:0] alu_out_in,
@@ -33,7 +34,9 @@ module EX2_MEM1_buffer(
     input fence_in,
     input [1:0] sys_op_in,
     input [31:0] pc_plus4_in,
+    input [1:0] available_in,
 
+    output [4:0] rs2_out,
     output [4:0] rd_out,
     output [31:0] rs2_data_out,
     output [31:0] alu_out_out,
@@ -46,6 +49,7 @@ module EX2_MEM1_buffer(
     output fence_out,
     output [1:0] sys_op_out,
     output [31:0] pc_plus4_out,
+    output [1:0] available_out,
 
     input clk,
     input flush,
@@ -53,6 +57,7 @@ module EX2_MEM1_buffer(
     input reset
     );
 
+    reg [4:0] rs2_reg;
     reg [4:0] rd_reg;
     reg [31:0] rs2_data_reg;
     reg [31:0] alu_out_reg;
@@ -65,11 +70,13 @@ module EX2_MEM1_buffer(
     reg fence_reg;
     reg [1:0] sys_op_reg;
     reg [31:0] pc_plus4_reg; 
+    reg [1:0] available_reg;
 
     always@(posedge clk)
         begin
             if (reset || flush)
                 begin
+                    rs2_reg <= 5'b0;
                     rd_reg <= 5'b0;
                     rs2_data_reg <= 32'b0;
                     alu_out_reg <= 32'b0;
@@ -82,9 +89,11 @@ module EX2_MEM1_buffer(
                     fence_reg <= 1'b0;
                     sys_op_reg <= 2'b0;
                     pc_plus4_reg <= 32'b0;
+                    available_reg <= 2'b0;
                 end
             else if (en)
                 begin
+                    rs2_reg <= rs2_in;
                     rd_reg <= rd_in;
                     rs2_data_reg <= rs2_data_in;
                     alu_out_reg <= alu_out_in;
@@ -97,9 +106,11 @@ module EX2_MEM1_buffer(
                     fence_reg <= fence_in;
                     sys_op_reg <= sys_op_in;
                     pc_plus4_reg <= pc_plus4_in;
+                    available_reg <= available_in;
                 end
         end
 
+    assign rs2_out = rs2_reg;
     assign rd_out = rd_reg;
     assign rs2_data_out = rs2_data_reg;
     assign alu_out_out = alu_out_reg;
@@ -112,5 +123,6 @@ module EX2_MEM1_buffer(
     assign fence_out = fence_reg;
     assign sys_op_out = sys_op_reg;
     assign pc_plus4_out = pc_plus4_reg; 
+    assign available_out = available_reg;
     
 endmodule

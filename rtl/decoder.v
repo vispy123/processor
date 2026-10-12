@@ -38,7 +38,8 @@ module decoder(
     output reg fence,
     output reg [1:0] sys_op, //ecall, ebreak
     output reg [31:0] imm,
-    output reg lui_check
+    output reg lui_check,
+    output reg [1:0] available, //rd available in
     output reg uses_rs1,
     output reg uses_rs2
     );
@@ -95,6 +96,11 @@ module decoder(
     localparam sys_op_ecall = 2'b01;
     localparam sys_op_ebreak = 2'b10;
 
+    localparam available_in_EX2 = 2'b00;
+    localparam available_in_MEM1 = 2'b01;
+    localparam available_in_MEM2 = 2'b10;
+    localparam available_in_WB = 2'b11;
+
     always@*
         begin
             alu_a_src = 1'b0;
@@ -113,6 +119,9 @@ module decoder(
             sys_op = 2'b00;
             imm = 32'b0;
             lui_check = 1'b0;
+            available = 2'b00;
+            uses_rs1 = 1'b0;
+            uses_rs2 = 1'b0;
             case(opcode)
                 7'b0110111: //lui
                     begin
@@ -121,6 +130,7 @@ module decoder(
                         wb_sel = wb_sel_alu;
                         imm = {instr[31:12], 12'b0};
                         lui_check = 1'b1;
+                        available = available_in_EX2;
                     end
                 7'b0010111: //auipc
                     begin
@@ -129,6 +139,7 @@ module decoder(
                         reg_write= 1'b1;
                         wb_sel = wb_sel_alu;
                         alu_op = alu_op_add;
+                        available = available_in_MEM1;
                         imm = {instr[31:12], 12'b0};
                     end
                 7'b1101111: //jal
@@ -139,6 +150,7 @@ module decoder(
                         branch = 1'b1;
                         reg_write = 1'b1;
                         wb_sel = wb_sel_pc_plus4;
+                        available = available_in_EX2;
                         imm = {{12{instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0};
                     end
                 7'b1100111: //jalr
@@ -150,6 +162,7 @@ module decoder(
                         branch = 1'b1;
                         reg_write = 1'b1;
                         alu_op = alu_op_add;
+                        available = available_in_EX2;
                         uses_rs1 = 1'b1;
                         imm = {{20{instr[31]}}, instr[31:20]};
                     end
@@ -186,6 +199,7 @@ module decoder(
                         reg_write = 1'b1;
                         alu_op = alu_op_add;
                         wb_sel = wb_sel_mem;
+                        available = available_in_WB;
                         uses_rs1 = 1'b1;
                         imm = {{20{instr[31]}}, instr[31:20]};
                     end
@@ -227,6 +241,7 @@ module decoder(
                         alu_b_src = 1'b1;
                         reg_write = 1'b1;
                         wb_sel = wb_sel_alu;
+                        available = available_in_MEM1;
                         uses_rs1 = 1'b1;
                         if (funct3 == 3'b001 || funct3 == 3'b101)
                             imm = {{27{1'b0}}, instr[24:20]};
@@ -308,6 +323,7 @@ module decoder(
                         alu_b_src = 1'b0;
                         reg_write = 1'b1;
                         wb_sel = wb_sel_alu;
+                        available = available_in_MEM1;
                         uses_rs1 = 1'b1;
                         uses_rs2 = 1'b1;
                     end
@@ -340,6 +356,7 @@ module decoder(
                         sys_op = 2'b00;
                         imm = 32'b0;
                         lui_check = 1'b0;
+                        available = 2'b00;
                         uses_rs1 = 1'b0;
                         uses_rs2 = 1'b0;
                     end

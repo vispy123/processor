@@ -37,6 +37,7 @@ module EX1_EX2_buffer(
     input fence_in,
     input [1:0] sys_op_in,
     input [31:0] pc_plus4_in,
+    input [1:0] available_in,
 
     output [4:0] rs1_out,
     output [4:0] rs2_out,
@@ -54,6 +55,7 @@ module EX1_EX2_buffer(
     output fence_out,
     output [1:0] sys_op_out,
     output [31:0] pc_plus4_out,
+    output [1:0] available_out,
 
     input clk,
     input en,
@@ -77,6 +79,7 @@ module EX1_EX2_buffer(
     reg fence_reg;
     reg [1:0] sys_op_reg;
     reg [31:0] pc_plus4_reg;
+    reg [1:0] available_reg;
 
     always@(posedge clk)
         begin
@@ -98,6 +101,7 @@ module EX1_EX2_buffer(
                     fence_reg <= 1'b0;
                     sys_op_reg <= 2'b0;
                     pc_plus4_reg <= 32'b0;
+                    available_reg <= 2'b0;
                 end
             else if (en)
                 begin
@@ -117,6 +121,7 @@ module EX1_EX2_buffer(
                     fence_reg <= fence_in;
                     sys_op_reg <= sys_op_in;
                     pc_plus4_reg <= pc_plus4_in;
+                    available_reg <= available_in;
                 end
         end
 
@@ -136,5 +141,6 @@ module EX1_EX2_buffer(
     assign fence_out = fence_reg;
     assign sys_op_out = sys_op_reg;
     assign pc_plus4_out = pc_plus4_reg;
+    assign available_out = available_reg;
 
 endmodule
