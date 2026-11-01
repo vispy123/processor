@@ -35,6 +35,8 @@ module EX2_MEM1_buffer(
     input [1:0] sys_op_in,
     input [31:0] pc_plus4_in,
     input [1:0] available_in,
+    input uses_rs1_in,
+    input uses_rs2_in,
 
     output [4:0] rs2_out,
     output [4:0] rd_out,
@@ -50,6 +52,8 @@ module EX2_MEM1_buffer(
     output [1:0] sys_op_out,
     output [31:0] pc_plus4_out,
     output [1:0] available_out,
+    output uses_rs1_out,
+    output uses_rs2_out,
 
     input clk,
     input flush,
@@ -71,6 +75,8 @@ module EX2_MEM1_buffer(
     reg [1:0] sys_op_reg;
     reg [31:0] pc_plus4_reg; 
     reg [1:0] available_reg;
+    reg uses_rs1_reg;
+    reg uses_rs2_reg;
 
     always@(posedge clk)
         begin
@@ -90,6 +96,8 @@ module EX2_MEM1_buffer(
                     sys_op_reg <= 2'b0;
                     pc_plus4_reg <= 32'b0;
                     available_reg <= 2'b0;
+                    uses_rs1_reg <= 1'b0;
+                    uses_rs2_reg <= 1'b0;
                 end
             else if (en)
                 begin
@@ -107,6 +115,8 @@ module EX2_MEM1_buffer(
                     sys_op_reg <= sys_op_in;
                     pc_plus4_reg <= pc_plus4_in;
                     available_reg <= available_in;
+                    uses_rs1_reg <= uses_rs1_in;
+                    uses_rs2_reg <= uses_rs2_in;
                 end
         end
 
@@ -124,5 +134,7 @@ module EX2_MEM1_buffer(
     assign sys_op_out = sys_op_reg;
     assign pc_plus4_out = pc_plus4_reg; 
     assign available_out = available_reg;
+    assign uses_rs1_out = uses_rs1_reg;
+    assign uses_rs2_out = uses_rs2_reg;
     
 endmodule

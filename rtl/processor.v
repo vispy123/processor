@@ -26,6 +26,31 @@ module processor(
     );
 
 
+    localparam wb_sel_alu = 2'b00;
+    localparam wb_sel_mem = 2'b01;
+    localparam wb_sel_pc_plus4 = 2'b10;
+
+    localparam no_forward=3'b000;
+    localparam from_ex2=3'b001;
+    localparam from_mem1=3'b010;
+    localparam from_mem2=3'b011;
+    localparam from_wb=3'b100;
+
+    wire stall_EX1;
+    wire stall_EX2;
+    wire stall_MEM1;
+
+    wire [2:0] forward_rs1_EX1;
+    wire [2:0] forward_rs2_EX1;
+    wire [2:0] forward_rs1_EX2;
+    wire [2:0] forward_rs2_EX2;
+    wire [2:0] forward_rs2_MEM1;
+
+    wire [31:0] forward_EX2;
+    wire [31:0] forward_MEM1;
+    wire [31:0] forward_MEM2;
+    wire [31:0] forward_WB;
+
     //pc
     
     reg [31:0] pc;
@@ -36,39 +61,38 @@ module processor(
     wire branch_taken_EX1;
     reg [31:0] branch_target_EX1;
 
-    wire pc_en;
-    assign pc_en = 1'b1;
+    reg pc_en;
 
     always@(posedge clk)
         begin
             if (reset) pc <= 32'b0;
             else if (pc_en) pc <= pc_next;
         end
-    assign pc_next = branch_taken_EX1 ? branch_target_EX1 : pc_plus4_IF1;
+    assign pc_next = (branch_taken_EX1 && (stall_EX1!=1'b1)) ? branch_target_EX1 : pc_plus4_IF1;
     assign pc_IF1 = pc;
     assign pc_plus4_IF1 = pc + 4;
 
 
     //drive later
-    wire IF1_IF2_en;
-    wire IF2_ID_en;
-    wire ID_EX1_en;
-    wire EX1_EX2_en;
-    wire EX2_MEM1_en;
-    wire MEM1_MEM2_en;
-    wire MEM2_WB_en;
+    reg IF1_IF2_en;
+    reg IF2_ID_en;
+    reg ID_EX1_en;
+    reg EX1_EX2_en;
+    reg EX2_MEM1_en;
+    reg MEM1_MEM2_en;
+    reg MEM2_WB_en;
 
     wire IF1_IF2_flush; //for branch
     wire IF2_ID_flush; //for branch
     wire ID_EX1_flush; //for branch
-    wire EX1_EX2_flush; //hazard, drive later
-    wire EX2_MEM1_flush; //hazard, drive later
-    wire MEM1_MEM2_flush; //hazard, drive later
-    wire MEM2_WB_flush; //hazard, drive later
+    reg EX1_EX2_flush; 
+    reg EX2_MEM1_flush; 
+    reg MEM1_MEM2_flush; 
+    reg MEM2_WB_flush; 
 
-    assign IF1_IF2_flush = branch_taken_EX1;
-    assign IF2_ID_flush = branch_taken_EX1;
-    assign ID_EX1_flush = branch_taken_EX1;
+    assign IF1_IF2_flush = (branch_taken_EX1 && (stall_EX1!=1'b1));
+    assign IF2_ID_flush = (branch_taken_EX1 && (stall_EX1!=1'b1));
+    assign ID_EX1_flush = (branch_taken_EX1 && (stall_EX1!=1'b1));
 
 
     //IF1_IF2_buffer
@@ -97,7 +121,7 @@ module processor(
     wire [31:0] dout_instr;
 
     assign we_instr=1'b0;
-    assign en_instr=1'b1;
+    assign en_instr=IF1_IF2_en; //instr_mem is technically a pipeline buffer
 
     instr_mem u_instr_mem(
         .addr(pc_IF1[11:2]),
@@ -237,6 +261,8 @@ module processor(
     wire [31:0] pc_plus4_EX1;
     wire lui_check_EX1;
     wire [1:0] available_EX1;
+    wire uses_rs1_EX1;
+    wire uses_rs2_EX1;
 
     ID_EX1_buffer u_ID_EX1_buffer(
         .rs1_in(rs1_ID),
@@ -263,6 +289,8 @@ module processor(
         .pc_plus4_in(pc_plus4_ID),
         .lui_check_in(lui_check_ID),
         .available_in(available_ID),
+        .uses_rs1_in(uses_rs1_ID),
+        .uses_rs2_in(uses_rs2_ID),
 
         .rs1_out(rs1_intermediate_EX1),
         .rs2_out(rs2_EX1),
@@ -288,6 +316,8 @@ module processor(
         .pc_plus4_out(pc_plus4_EX1),
         .lui_check_out(lui_check_EX1),
         .available_out(available_EX1),
+        .uses_rs1_out(uses_rs1_EX1),
+        .uses_rs2_out(uses_rs2_EX1),
 
         .clk(clk),
         .en(ID_EX1_en),
@@ -296,14 +326,39 @@ module processor(
     );
 
 
+    reg [31:0] rs1_data_EX1_forward;
+    reg [31:0] rs2_data_EX1_forward;
+
+    always@*
+        begin
+            case(forward_rs1_EX1)
+                no_forward: rs1_data_EX1_forward = rs1_data_EX1;
+                from_ex2: rs1_data_EX1_forward = forward_EX2;
+                from_mem1: rs1_data_EX1_forward = forward_MEM1;
+                from_mem2: rs1_data_EX1_forward = forward_MEM2;
+                from_wb: rs1_data_EX1_forward = forward_WB;
+                default: rs1_data_EX1_forward = rs1_data_EX1;
+            endcase
+
+            case(forward_rs2_EX1)
+                no_forward: rs2_data_EX1_forward = rs2_data_EX1;
+                from_ex2: rs2_data_EX1_forward = forward_EX2;
+                from_mem1: rs2_data_EX1_forward = forward_MEM1;
+                from_mem2: rs2_data_EX1_forward = forward_MEM2;
+                from_wb: rs2_data_EX1_forward = forward_WB;
+                default: rs2_data_EX1_forward = rs2_data_EX1;
+            endcase
+        end
+
+
     //branch_taken 
 
     branch_taken u_branch_taken(
         .branch(branch_EX1),
         .branch_op(branch_op_EX1),
         .wb_sel_pc_plus4(wb_sel_EX1[1]),
-        .rs1_data(rs1_data_EX1),
-        .rs2_data(rs2_data_EX1),
+        .rs1_data(rs1_data_EX1_forward),
+        .rs2_data(rs2_data_EX1_forward),
         
         .branch_taken(branch_taken_EX1)
     );
@@ -312,8 +367,8 @@ module processor(
     wire [31:0] alu_a_EX1;
     wire [31:0] alu_b_EX1;
 
-    assign alu_a_intermediate_EX1 = (alu_a_src_EX1 == 1'b1)? pc_EX1 : rs1_data_EX1;
-    assign alu_b_EX1 = (alu_b_src_EX1 == 1'b1)? imm_EX1 : rs2_data_EX1;
+    assign alu_a_intermediate_EX1 = (alu_a_src_EX1 == 1'b1)? pc_EX1 : rs1_data_EX1_forward;
+    assign alu_b_EX1 = (alu_b_src_EX1 == 1'b1)? imm_EX1 : rs2_data_EX1_forward;
     assign alu_a_EX1 = (lui_check_EX1 == 1'b1)? 32'b0 : alu_a_intermediate_EX1;
     assign rs1_EX1 = (lui_check_EX1 == 1'b1)? 5'b0 : rs1_intermediate_EX1;
 
@@ -349,12 +404,14 @@ module processor(
     wire [1:0] sys_op_EX2;
     wire [31:0] pc_plus4_EX2;
     wire [1:0] available_EX2;
+    wire uses_rs1_EX2;
+    wire uses_rs2_EX2;
 
     EX1_EX2_buffer u_EX1_EX2_buffer(
         .rs1_in(rs1_EX1),
         .rs2_in(rs2_EX1),
         .rd_in(rd_EX1),
-        .rs2_data_in(rs2_data_EX1),
+        .rs2_data_in(rs2_data_EX1_forward),
         .alu_a_in(alu_a_EX1),
         .alu_b_in(alu_b_EX1),
         .wb_sel_in(wb_sel_EX1),
@@ -368,6 +425,8 @@ module processor(
         .sys_op_in(sys_op_EX1),
         .pc_plus4_in(pc_plus4_EX1),
         .available_in(available_EX1),
+        .uses_rs1_in(uses_rs1_EX1),
+        .uses_rs2_in(uses_rs2_EX1),
 
         .rs1_out(rs1_EX2),
         .rs2_out(rs2_EX2),
@@ -386,6 +445,8 @@ module processor(
         .sys_op_out(sys_op_EX2),
         .pc_plus4_out(pc_plus4_EX2),
         .available_out(available_EX2),
+        .uses_rs1_out(uses_rs1_EX2),
+        .uses_rs2_out(uses_rs2_EX2),
 
         .clk(clk),
         .en(EX1_EX2_en),
@@ -393,14 +454,43 @@ module processor(
         .reset(reset)
     );
 
+    assign forward_EX2 = (wb_sel_EX2 == wb_sel_pc_plus4) ? pc_plus4_EX2 : alu_b_EX2;
+
+    reg [31:0] alu_a_EX2_forward;
+    reg [31:0] alu_b_EX2_forward;
+
+    reg [2:0] forward_rs2_EX2_store_guard;
+
+    always@*
+        begin
+            case(forward_rs1_EX2)
+                no_forward: alu_a_EX2_forward = alu_a_EX2;
+                from_mem1: alu_a_EX2_forward = forward_MEM1;
+                from_mem2: alu_a_EX2_forward = forward_MEM2;
+                from_wb: alu_a_EX2_forward = forward_WB;
+                default: alu_a_EX2_forward = alu_a_EX2;
+            endcase
+
+            if (mem_write_EX2 == 1'b1) forward_rs2_EX2_store_guard = no_forward;
+            else forward_rs2_EX2_store_guard = forward_rs2_EX2;
+
+            case(forward_rs2_EX2_store_guard)
+                no_forward: alu_b_EX2_forward = alu_b_EX2;
+                from_mem1: alu_b_EX2_forward = forward_MEM1;
+                from_mem2: alu_b_EX2_forward = forward_MEM2;
+                from_wb: alu_b_EX2_forward = forward_WB;
+                default: alu_b_EX2_forward = alu_b_EX2;
+            endcase
+        end
+
 
     //alu
 
     wire [31:0] alu_out_EX2;
 
     alu u_alu(
-        .alu_a(alu_a_EX2),
-        .alu_b(alu_b_EX2),
+        .alu_a(alu_a_EX2_forward),
+        .alu_b(alu_b_EX2_forward),
         .control(alu_op_EX2),
         
         .alu_out(alu_out_EX2)
@@ -423,6 +513,8 @@ module processor(
     wire [1:0] sys_op_MEM1;
     wire [31:0] pc_plus4_MEM1;
     wire [1:0] available_MEM1;
+    wire uses_rs1_MEM1;
+    wire uses_rs2_MEM1;
 
     EX2_MEM1_buffer u_EX2_MEM1_buffer(
         .rs2_in(rs2_EX2),
@@ -439,6 +531,8 @@ module processor(
         .sys_op_in(sys_op_EX2),
         .pc_plus4_in(pc_plus4_EX2),
         .available_in(available_EX2),
+        .uses_rs1_in(uses_rs1_EX2),
+        .uses_rs2_in(uses_rs2_EX2),
 
         .rs2_out(rs2_MEM1),
         .rd_out(rd_MEM1),
@@ -454,12 +548,28 @@ module processor(
         .sys_op_out(sys_op_MEM1),
         .pc_plus4_out(pc_plus4_MEM1),
         .available_out(available_MEM1),
+        .uses_rs1_out(uses_rs1_MEM1),
+        .uses_rs2_out(uses_rs2_MEM1),
 
         .clk(clk),
         .en(EX2_MEM1_en),
         .flush(EX2_MEM1_flush),
         .reset(reset)
     );
+
+    assign forward_MEM1 = (wb_sel_MEM1 == wb_sel_pc_plus4) ? pc_plus4_MEM1 : alu_out_MEM1;
+
+    reg [31:0] rs2_data_MEM1_forward;
+
+    always@*
+        begin
+            case(forward_rs2_MEM1)
+                no_forward: rs2_data_MEM1_forward = rs2_data_MEM1;
+                from_mem2: rs2_data_MEM1_forward = forward_MEM2;
+                from_wb: rs2_data_MEM1_forward = forward_WB;
+                default: rs2_data_MEM1_forward = rs2_data_MEM1;
+            endcase
+        end
 
 
     //set en for stores
@@ -471,7 +581,7 @@ module processor(
         .mem_write(mem_write_MEM1),
         .store_op(store_op_MEM1),
         .offset(alu_out_MEM1[1:0]),
-        .din(rs2_data_MEM1),
+        .din(rs2_data_MEM1_forward),
 
         .we(we_data),
         .din_out(din_data)
@@ -540,6 +650,8 @@ module processor(
         .reset(reset)
     );
 
+    assign forward_MEM2 = (wb_sel_MEM2 == wb_sel_pc_plus4) ? pc_plus4_MEM2 : alu_out_MEM2;
+
 
     //load
 
@@ -595,10 +707,6 @@ module processor(
 
     //reg write mux
 
-    localparam wb_sel_alu = 2'b00;
-    localparam wb_sel_mem = 2'b01;
-    localparam wb_sel_pc_plus4 = 2'b10;
-
     always@*
         begin
             case(wb_sel_WB)
@@ -608,23 +716,13 @@ module processor(
                 default: write_data_WB = 32'b0;
             endcase
         end
+
+    assign forward_WB = write_data_WB;
     
 
-    //forwards
+    //hazards
 
-    localparam no_forward=3'b000;
-    localparam from_ex2=3'b001;
-    localparam from_mem1=3'b010;
-    localparam from_mem2=3'b011;
-    localparam from_wb=3'b100;
-
-    wire [2:0] forward_rs1_EX1;
-    wire [2:0] forward_rs2_EX1;
-    wire [2:0] forward_rs1_EX2;
-    wire [2:0] forward_rs2_EX2;
-    wire [2:0] forward_rs2_MEM1;
-
-    forward u_forward(
+    hazard u_hazard(
         .rd_EX2(rd_EX2),
         .rd_MEM1(rd_MEM1),
         .rd_MEM2(rd_MEM2),
@@ -646,11 +744,70 @@ module processor(
         .available_MEM2(available_MEM2),
         .available_WB(available_WB),
 
+        .uses_rs1_EX1(uses_rs1_EX1),
+        .uses_rs1_EX2(uses_rs1_EX2),
+        .uses_rs1_MEM1(uses_rs1_MEM1),
+        .uses_rs2_EX1(uses_rs2_EX1),
+        .uses_rs2_EX2(uses_rs2_EX2),
+        .uses_rs2_MEM1(uses_rs2_MEM1),
+
         .forward_rs1_EX1(forward_rs1_EX1),
         .forward_rs2_EX1(forward_rs2_EX1),
         .forward_rs1_EX2(forward_rs1_EX2),
         .forward_rs2_EX2(forward_rs2_EX2),
-        .forward_rs2_MEM1(forward_rs2_MEM1)
+        .forward_rs2_MEM1(forward_rs2_MEM1),
+
+        .stall_EX1(stall_EX1),
+        .stall_EX2(stall_EX2),
+        .stall_MEM1(stall_MEM1)
     );
+
+    always@*
+        begin
+            EX1_EX2_flush = 1'b0; 
+            EX2_MEM1_flush = 1'b0; 
+            MEM1_MEM2_flush = 1'b0; 
+            MEM2_WB_flush = 1'b0; 
+
+            pc_en = 1'b1;
+            IF1_IF2_en = 1'b1;
+            IF2_ID_en = 1'b1;
+            ID_EX1_en = 1'b1;
+            EX1_EX2_en = 1'b1;
+            EX2_MEM1_en = 1'b1;
+            MEM1_MEM2_en = 1'b1;
+            MEM2_WB_en = 1'b1;
+
+            if (stall_MEM1)
+                begin
+                    pc_en = 1'b0;
+                    IF1_IF2_en = 1'b0;
+                    IF2_ID_en = 1'b0;
+                    ID_EX1_en = 1'b0;
+                    EX1_EX2_en = 1'b0;
+                    EX2_MEM1_en = 1'b0;
+                    MEM1_MEM2_en = 1'b1;
+                    MEM1_MEM2_flush = 1'b1;
+                end
+            else if (stall_EX2)
+                begin
+                    pc_en = 1'b0;
+                    IF1_IF2_en = 1'b0;
+                    IF2_ID_en = 1'b0;
+                    ID_EX1_en = 1'b0;
+                    EX1_EX2_en = 1'b0;
+                    EX2_MEM1_en = 1'b1;
+                    EX2_MEM1_flush = 1'b1;
+                end
+            else if (stall_EX1)
+                begin
+                    pc_en = 1'b0;
+                    IF1_IF2_en = 1'b0;
+                    IF2_ID_en = 1'b0;
+                    ID_EX1_en = 1'b0;
+                    EX1_EX2_en = 1'b1;
+                    EX1_EX2_flush = 1'b1;
+                end
+        end
 
 endmodule
